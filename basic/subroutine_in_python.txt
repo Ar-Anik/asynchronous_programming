@@ -1,0 +1,28 @@
+# Link : https://adacomputerscience.org/concepts/sub_define_and_call
+
+Q : What is Subroutine?
+-> A subroutine in Python is any callable block of code that performs a specific task and can be invoked from elsewhere in
+the program — most commonly implemented as a function (defined with def or lambda) but also as a method, a callable
+object (an instance implementing __call__), a builtin function or an async function/generator when those semantics are
+required.
+
+-> The term subroutine is language-agnostic: it historically means “a named sequence of instructions that can be executed
+from different places” (also called procedure, routine or function in various languages). In Python practice, function is
+the usual name; method is the term used when a function is an attribute of a class and bound to an instance or class.
+
+# Key properties of subroutines in Python:
+- Encapsulation of behavior: a subroutine groups statements to perform a single logical operation.
+- Parameterization: inputs (arguments) can be passed in.
+- Reusability: the same subroutine can be called from many places.
+- Abstraction: callers need not know the implementation details.
+- Return value(s): a subroutine may return a value (or None implicitly).
+
+
+# Example
+def add(a, b):
+    """Return the sum of a and b."""
+    return a + b
+
+result = add(2, 3)  # result == 5
+
+Here, def creates a function object and binds it to the name add.

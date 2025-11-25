@@ -1,0 +1,36 @@
+# Link : https://adacomputerscience.org/concepts/sub_proc_fun
+
+Q : What is Procedure?
+-> A procedure is a named block of code that performs a specific task but does not return a value. The procedure can be
+called by another part of the program.
+
+-> A procedure in Python is a callable that is intended to perform actions (side effects) rather than compute and return
+a meaningful value — in practice this is any function/method/callable whose purpose is its effect and which typically
+returns None (implicitly or explicitly). In Python terminology the word function is primary; procedure is a conceptual
+sub-class of function focused on actions.
+
+# Terminology and relationship to “function”
+Many programming languages distinguish function (returns a value) and procedure (does not return a value). Python does
+not enforce a separate language construct for procedures — every procedure is implemented as a Python function, method
+or callable object.
+
+A practical convention : label something a procedure when its role is to perform I/O, mutate state, produce side effects
+or drive control flow not to compute a reusable value. Such callables typically have return type None.
+
+
+# Syntax and a minimal example
+def log_message(message) -> None:
+    """A simple procedure that writes a message to stdout."""
+    print(message)          # side effect
+    # no return statement -> returns None implicitly
+
+Calling log_message("hello") prints to standard output. The function returns None so treating it as a value-computing
+function is not the intent.
+
+
+# Explicit None
+def store(obj, container) -> None:
+    container.append(obj)
+    return None   # explicit but redundant
+
+Type hinting a procedure: None is the canonical type hint indicating the callable does not return a meaningful value.
