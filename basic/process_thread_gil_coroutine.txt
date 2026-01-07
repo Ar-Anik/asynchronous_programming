@@ -1,0 +1,99 @@
+1. Python Interpreter এবং Process
+প্রতিটি Python interpreter আলাদা একটি process হিসেবে চলে। অর্থাৎ—
+- একটি .py ফাইল চালু করলে একটি নতুন process তৈরি হয়।
+- আরও অতিরিক্ত Python process চালু করা যায়:
+    * multiprocessing লাইব্রেরি দিয়ে
+    * concurrent.futures-এর ProcessPoolExecutor দিয়ে
+
+- আর subprocess লাইব্রেরি ব্যবহার করা হয়—
+    * Python থেকে অন্য কোনো বাহ্যিক প্রোগ্রাম চালানোর জন্য,
+    * সেই প্রোগ্রাম Python দিয়ে লেখা হোক বা অন্য ভাষায়—তা গুরুত্বপূর্ণ নয়।
+
+
+2. Python Thread কীভাবে কাজ করে
+Python interpreter সাধারণভাবে একটি মাত্র thread ব্যবহার করে:
+    - ব্যবহারকারীর লেখা প্রোগ্রাম চালানোর জন্য
+    - memory garbage collector চালানোর জন্য
+
+তবে অতিরিক্ত thread তৈরি করা যায়:
+    - threading লাইব্রেরি দিয়ে
+    - concurrent.futures-এর ThreadPoolExecutor দিয়ে
+
+
+3. Global Interpreter Lock (GIL)
+Python-এর ভিতরের গুরুত্বপূর্ণ ডেটা, যেমন :
+    - object reference count
+    - internal state
+এসবের নিরাপত্তা নিশ্চিত করার জন্য একটি বিশেষ lock থাকে, যার নাম: Global Interpreter Lock (GIL)
+এর কাজের নিয়ম:
+    - এক সময় শুধুমাত্র একটি thread GIL ধরতে পারে
+    - ফলে এক সময় শুধু একটি thread Python code execute করতে পারে
+    - CPU কোর যত বেশি হোক, Python code একসাথে একাধিক thread-এ চলতে পারে না
+
+
+4. GIL অনির্দিষ্টকাল ধরে রাখা ঠেকানোর ব্যবস্থা
+Python bytecode interpreter সাধারণভাবে প্রতি ৫ মিলিসেকেন্ড (5ms) পরপর:
+    - চলমান thread থেকে GIL ছাড়িয়ে নেয়
+    - অন্য কোনো thread অপেক্ষায় থাকলে, OS scheduler সেটিকে চালানোর সুযোগ দিতে পারে
+ফলে thread গুলোর মধ্যে switch করে execution হয়।
+
+
+5. Python কোড থেকে GIL নিয়ন্ত্রণ করা যায় না
+সাধারণ Python কোড থেকে GIL সরাসরি ছাড়ানো যায় না কিন্তু— যদি কোনো built-in function বা C ভাষায় লেখা কোনো extension ব্যবহার করা হয়,
+তখন সেই কোড দীর্ঘ সময় কাজ করলে নিজে থেকেই GIL ছাড়তে পারে।
+
+
+6. কোন কোন কাজে GIL নিজে থেকেই ছাড়ে?
+যেসব standard library function সরাসরি OS syscall করে সেগুলো— স্বয়ংক্রিয়ভাবে GIL ছাড়ে, যেমন:
+    - disk I/O
+    - network I/O
+    - time.sleep()
+
+এছাড়া:
+    - NumPy / SciPy-এর অনেক heavy গণনার কাজ
+    - zlib ও bz2 দিয়ে compress / decompress করার কাজ
+এসব ক্ষেত্রেও GIL ছাড়ে।
+
+
+7. GIL-এর বাইরে চলে এমন Non-Python Thread
+যেসব extension Python/C API ব্যবহার করে লেখা হয়, সেগুলো— এমন thread চালাতে পারে যেগুলো GIL দ্বারা প্রভাবিত হয় না কিন্তু— সেগুলো সরাসরি
+Python object পরিবর্তন করতে পারে না(like list, dict) তবে memory buffer-ভিত্তিক object যেমন:
+    - bytearray
+    - array.array
+    - NumPy array
+এসবের raw memory read-write করতে পারে
+
+
+8. Network Programming-এ GIL কেন বড় সমস্যা নয়?
+Network programming-এ: I/O function নিজেই GIL ছাড়ে, network থেকে data আসতে বা যেতে অনেক সময় লাগে (latency বেশি) তাই প্রতিটি
+thread বেশিরভাগ সময় অপেক্ষায় থাকে ফলে: একাধিক thread switch করে চলতে পারে, overall performance খুব বেশি কমে না
+
+এই কারণেই ডেভিড বেজলি বলেছেন:
+“Python thread গুলো মূলত কিছু না করাতেই সবচেয়ে ভালো কাজ করে।” এর অর্থ—thread গুলো অপেক্ষার সময় ভালোভাবে কাজে লাগানো যায়।
+
+
+9. Heavy Computation-এ GIL সমস্যা তৈরি করে
+যেসব কাজ প্রচণ্ড CPU ব্যবহার করে : যেমন বড় গণনা, image processing, data crunching ইত্যাদি
+এই ধরনের ক্ষেত্রে: একাধিক thread GIL দখল নিয়ে প্রতিযোগিতা করে, ফলে পারফরম্যান্স কমে যায়
+
+এই জন্য: single-threaded, Sequential কোড এই ধরনের কাজে বেশি দ্রুত ও simpler হয়
+
+
+10. CPU-Heavy কাজ Multicore-এ চালাতে কী করতে হবে?
+Python-এর CPU-intensive কাজ যদি একাধিক CPU core-এ চালাতে হয়, তাহলে— একাধিক Python process ব্যবহার করতেই হবে
+
+
+Coroutine গুলো— একই Python thread-এর ভিতর, একই event loop-এর অধীনে switch করে চলে। তাই তারা আলাদা thread নয় তারা একই
+thread ভাগ করে নেয়। Coroutine GIL দ্বারা প্রভাবিত হয় না কারণ:
+    - তারা একটাই thread-এ চলে
+    - একসাথে একাধিক thread নেই
+    - ফলে GIL নিয়ে কোনো দ্বন্দ্ব তৈরি হয় না
+
+
+Asynchronous প্রোগ্রামে multiple Thread ব্যবহার সম্ভব কিন্তু Best Practice হলো—
+- একটি মাত্র thread থাকবে, যা:
+    * event loop চালাবে
+    * সব coroutine চালাবে
+
+আর প্রয়োজন হলে অতিরিক্ত thread ব্যবহার হবে।
+

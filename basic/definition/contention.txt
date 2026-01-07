@@ -1,0 +1,28 @@
+# Contention
+-> যখন একাধিক task একসাথে একই সময়ে একই resource ব্যবহার করতে চায়, কিন্তু সেই resources টা একসাথে সবার জন্য পাওয়া যায় না, তখন যে অপেক্ষা
+(waiting for resource) বা বাধা তৈরি হয়, সেটাই Contention।
+
+# Resource Contention
+এটা হয় যখন একাধিক process/thread/coroutine একই data, একই lock, একই file বা একই storage একসাথে ব্যবহার করতে চায়।
+
+# Real Life Example
+একটা মাত্র বাথরুম → একই সময়ে ৫ জন ঢুকতে চাচ্ছে → সবাইকে লাইনে দাঁড়াতে হচ্ছে → এই লাইনেই দাঁড়িয়ে থাকা = Resource Contention
+
+# Example in Programming
+- একাধিক thread একই variable পরিবর্তন করতে চায়
+- একাধিক process একই file-এ লিখতে চায়
+- একাধিক coroutine একই database connection চায়
+
+এখানে সবাইকে অপেক্ষা করতে হয় → এটাই resource contention
+
+# CPU Contention (CPU কনটেনশন)
+এটা হয় যখন, একাধিক heavy task একসাথে CPU time চাইছে, কিন্তু CPU একসাথে সবার কাজ চালাতে পারছে না।
+
+# Real Life Example
+একটা মাত্র চুলা → একই সময়ে ৫টা হাঁড়ি বসাতে চাওয়া → চুলা একসাথে ১টার বেশি নিতে পারে না → বাকিগুলো অপেক্ষায় থাকে → এই অপেক্ষাই = CPU Contention
+
+# in Programminng Example
+- অনেক heavy process একসাথে চলছে
+- CPU core কম
+- তাই OS scheduler ঠিক করে দেয় কে কতক্ষণ CPU time পাবে
+- বাকিরা অপেক্ষা করে, এই অপেক্ষাই CPU contention

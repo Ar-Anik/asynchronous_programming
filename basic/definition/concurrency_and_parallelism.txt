@@ -1,0 +1,32 @@
+Link : https://www.linkedin.com/pulse/dissection-concurrency-parallelism-threading-inbangla-nur-amin-sifat/ (bangla)
+Link : https://www.linkedin.com/pulse/concurrency-বনম-parallelism-সফটওযযর-ইঞজনযরদর-জনয-সহজ-বলয-saiful-islam-rvavc/ (banghla)
+
+-> Concurrency (কনকারেন্সি)
+Concurrency মানে হলো একাধিক কাজকে একই সময়ে Handle করার দক্ষতা, যেখানে কাজগুলো হয়:
+- একটার পর একটা দ্রুতগতিতে switch করে execute হয়
+- অথবা সুযোগ থাকলে কিছু কাজ একসাথে execute হয়
+
+ফলে প্রতিটি কাজ ধাপে ধাপে এগিয়ে যায় এবং শেষ পর্যন্ত হয় সফলভাবে শেষ হয়, না হয় ব্যর্থ হয়ে থামে।
+
+এমনকি একটি single-core CPU-ও concurrency করতে পারে, যদি তার মধ্যে এমন একটি Operating System scheduler থাকে যা একাধিক কাজকে
+খুব দ্রুত switch করে চালায়। এই ব্যবস্থাকেই সাধারণভাবে Multitasking (মাল্টিটাস্কিং) বলা হয়।
+
+# Example:
+একজন রাঁধুনি একই চুলায় এক সাথে একাধিক খাবার বানাচ্ছে—একটু ভাত নাড়ছে, একটু ডাল দেখছে, আবার সবজির দিকে নজর দিচ্ছে। একটাও কাজ একটানা চলে
+না, কিন্তু সব কাজই একসাথে এগোচ্ছে। এটিই Concurrency।
+
+
+-> Parallelism (প্যারালেলিজম)
+Parallelism মানে হলো একাধিক কাজ একদম সত্যিকারের একই সময়ে একসাথে চলা। এটা তখনই সম্ভব হয়, যখন থাকে:
+- একাধিক CPU core
+- একাধিক আলাদা CPU
+- অথবা GPU
+- অথবা একাধিক কম্পিউটার একসাথে (cluster)
+
+এখানে কাজগুলো শুধু switch করে নয়, বরং একই মুহূর্তে আলাদা আলাদা প্রসেসরে চলছে।
+
+# Example:
+একটি রান্নাঘরে একসাথে ৪ জন রাঁধুনি ৪টা আলাদা চুলায় ৪টা খাবার একদম একই সময়ে বানাচ্ছে—এটাই Parallelism।
+
+
+-> Concurrency provides a way to structure a solution to solve a problem that may (but not necessarily) be parallelizable.

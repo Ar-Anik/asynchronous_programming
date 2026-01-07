@@ -1,0 +1,13 @@
+Queue (কিউ)
+-> Queue হলো একটি ডেটা স্ট্রাকচার যেখানে সাধারণত FIFO (First In, First Out) নিয়মে ডেটা রাখা ও নেওয়া হয়
+
+কিউ বিভিন্ন execution unit-এর মধ্যে অ্যাপ্লিকেশনের ডেটা এবং কন্ট্রোল মেসেজ (যেমন: error code, কোনো কাজ বন্ধ করার সংকেত ইত্যাদি) আদান-প্রদানের
+সুযোগ করে দেয়।
+
+কিউ-এর implementation নির্ভর করে কোন ধরনের concurrency model ব্যবহার করা হচ্ছে তার ওপর:
+    - Python-এর standard library-র queue প্যাকেজ থ্রেডের জন্য কিউ ক্লাস প্রদান করে।
+    - multiprocessing এবং asyncio প্যাকেজ তাদের নিজস্ব কিউ ক্লাস ব্যবহার করে, কারণ তাদের কাজের ধরন আলাদা।
+
+এছাড়া queue এবং asyncio প্যাকেজে এমন কিছু কিউ-ও আছে যেগুলো FIFO নিয়ম অনুসরণ করে না যেমন:
+    - LifoQueue → Last In, First Out
+    - PriorityQueue

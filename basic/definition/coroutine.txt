@@ -1,0 +1,23 @@
+Coroutine (কোরোটিন)
+-> Coroutine হলো এমন এক ধরনের ফাংশন যা চলার সময় নিজেকে থামাতে পারে এবং পরে আবার যেখানে থেমেছিল ঠিক সেখান থেকেই শুরু করতে পারে—পুরো
+ফাংশনটি পুনরায় শুরু না করেই।
+
+Python-এ:
+- Classic coroutines তৈরি হয় generator function থেকে।
+- Native coroutines তৈরি হয় async def ব্যবহার করে।
+
+Python-এর কোরোটিন সাধারণত একটি থ্রেডের ভেতর চলে এবং সেই থ্রেডের event loop নিয়ন্ত্রণে থাকে। event loop এবং coroutine একই থ্রেডে কাজ করে।
+
+Asynchronous programming frameworks যেমন: asyncio, Curio বা Trio event loop এবং সমর্থনকারী লাইব্রেরি প্রদান করে যা non-blocking,
+coroutine ভিত্তিক I/O কে সহজ করে তোলে।
+
+# বৈশিষ্ট্য:
+- Coroutine cooperative multitasking সমর্থন করে।(একটি করুটিন যখন কাজ শুরু করে, সে ততক্ষণ পর্যন্ত কাজ চালিয়ে যায় যতক্ষণ
+না সে নিজে থেকে yield বা await কীওয়ার্ড ব্যবহার করে কন্ট্রোল বা নিয়ন্ত্রণ ছেড়ে দিচ্ছে। যখন সে বিরতি নেয়, তখনই কেবল অন্য একটি
+করুটিন কাজ শুরু করার সুযোগ পায়। এটি অনেকটা একটি একক লাইনের কাউন্টারের মতো, যেখানে একজন কাজ শেষ করে সরে দাঁড়ালে তবেই
+অন্যজন আসতে পারে।)
+- প্রতিটি coroutine নিজেই yield বা await ব্যবহার করে নিয়ন্ত্রণ ছাড়ে, যাতে অন্য coroutine-ও একই থ্রেডে চলতে পারে। এটি parallel execution
+  নয় বরং concurrency।
+- কোনো coroutine যদি block হয়, তাহলে সমস্ত event loop এবং অন্য coroutineও থেমে যায়। এটি preemptive multitasking-এর থেকে ভিন্ন,
+  যা process বা thread-এ OS scheduler নিয়ন্ত্রণ করে।
+- একই কাজের জন্য coroutine থ্রেড বা প্রসেসের তুলনায় অনেক কম resource ব্যবহার করে।
