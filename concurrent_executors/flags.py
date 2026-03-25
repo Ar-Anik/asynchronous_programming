@@ -1,3 +1,7 @@
+"""
+# Sequential Download Script
+"""
+
 import time
 from pathlib import Path
 from typing import Callable
@@ -9,7 +13,7 @@ split convert string like ['CN', 'IN', 'US', 'ID', ...]
 """
 
 BASE_URL = 'https://www.fluentpython.com/data/flags'
-DEST_DIR = Path('Desktop')
+DEST_DIR = Path('sequential_downloaded')
 """
 Creates a Path object pointing to "Desktop" folder. This is relative path.
 """
@@ -35,6 +39,8 @@ def get_flag(cc: str) -> bytes:
     return resp.content
 
 """
+-> httpx library provide both synchronous and asynchronous APIs.
+
 -> timeout=6.1
 for Each response wait max 6.1 seconds
 
