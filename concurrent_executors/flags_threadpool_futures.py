@@ -35,6 +35,8 @@ def download_many(cc_list: list[str]) -> int:
         to_do: list[Future] = []
         for cc in sorted(cc_list):
             future = executor.submit(download_one, cc)
+            # print(future.__dict__)
+            # print(repr(future))
             to_do.append(future)
             print(f'Scheduled for {cc}: {future}')
 
