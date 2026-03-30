@@ -21,7 +21,7 @@ def loiter(n):
 def main():
     display('Script Starting.')
 
-    executor = ThreadPoolExecutor(max_workers=5)
+    executor = ThreadPoolExecutor(max_workers=3)
     results = executor.map(loiter, range(5))
 
     display('results : ', results)
