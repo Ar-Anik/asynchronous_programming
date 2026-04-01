@@ -1,0 +1,43 @@
+-----------------------------------------------------------------------------------------------
+# Show Python File Available Command
+aubdurrobanik@Aubdurs-MacBook-Air error_handling % python flags2_threadpool.py -h
+usage: flags2_threadpool.py [-h] [-a] [-e] [-l N] [-m CONCURRENT] [-s LABEL] [-v] [CC ...]
+
+Download flags for country codes. Default: top 20 countries by population.
+
+positional arguments:
+  CC                    country code or 1st letter (eg. B for BA...BZ)
+
+options:
+  -h, --help            show this help message and exit
+  -a, --all             get all available flags (AD to ZW)
+  -e, --every           get flags for every possible code (AA...ZZ)
+  -l, --limit N         limit to N first codes
+  -m, --max_req CONCURRENT
+                        maximum concurrent requests (default=30)
+  -s, --server LABEL    Server to hit; one of DELAY, ERROR, LOCAL, REMOTE (default=REMOTE)
+  -v, --verbose         output detailed progress info
+-----------------------------------------------------------------------------------------------
+
+----------------------------------------------------------------------------------------------------
+# For Create Local Server
+aubdurrobanik@Aubdurs-MacBook-Air concurrent_executors % python -m http.server
+Serving HTTP on :: port 8000 (http://[::]:8000/) ...
+
+# For Create Slow Server
+aubdurrobanik@Aubdurs-MacBook-Air concurrent_executors % python slow_server.py 8001
+Serving HTTP on :: port 8001 (http://[::]:8001/) ...
+
+# For Create Error Server
+aubdurrobanik@Aubdurs-MacBook-Air concurrent_executors % python slow_server.py 8002 --error-rate .25
+Serving HTTP on :: port 8002 (http://[::]:8002/) ...
+-----------------------------------------------------------------------------------------------------
+
+------------------------------------------------------------------------------
+# Use Command For Testing
+Local Server : python flags2_threadpool.py --server LOCAL
+
+Delay Server : python flags2_threadpool.py --server DELAY
+
+Error Server : python flags2_threadpool.py --server ERROR
+-------------------------------------------------------------------------------
