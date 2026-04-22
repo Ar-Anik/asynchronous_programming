@@ -38,19 +38,19 @@ def get_flag(base_url: str, cc: str) -> bytes:
 def download_one(cc: str, base_url: str, verbose: bool = False) -> DownloadStatus:
     try:
         image = get_flag(base_url, cc)
-    except httpx.HTTPStatusError as exc:  # <4>
+    except httpx.HTTPStatusError as exc:
         res = exc.response
         if res.status_code == HTTPStatus.NOT_FOUND:
-            status = DownloadStatus.NOT_FOUND  # <5>
+            status = DownloadStatus.NOT_FOUND
             msg = f'not found: {res.url}'
         else:
-            raise  # <6>
+            raise
     else:
         save_flag(image, f'{cc}.gif')
         status = DownloadStatus.OK
         msg = 'OK'
 
-    if verbose:  # <7>
+    if verbose:
         print(cc, msg)
 
     return status
@@ -58,30 +58,30 @@ def download_one(cc: str, base_url: str, verbose: bool = False) -> DownloadStatu
 
 # tag::FLAGS2_DOWNLOAD_MANY_SEQUENTIAL[]
 def download_many(cc_list: list[str], base_url: str, verbose: bool, _unused_concur_req: int) -> Counter[DownloadStatus]:
-    counter: Counter[DownloadStatus] = Counter()  # <1>
-    cc_iter = sorted(cc_list)  # <2>
+    counter: Counter[DownloadStatus] = Counter()
+    cc_iter = sorted(cc_list)
     if not verbose:
-        cc_iter = tqdm.tqdm(cc_iter)  # <3>
+        cc_iter = tqdm.tqdm(cc_iter)
     for cc in cc_iter:
         try:
-            status = download_one(cc, base_url, verbose)  # <4>
-        except httpx.HTTPStatusError as exc:  # <5>
+            status = download_one(cc, base_url, verbose)
+        except httpx.HTTPStatusError as exc:
             error_msg = 'HTTP error {resp.status_code} - {resp.reason_phrase}'
             error_msg = error_msg.format(resp=exc.response)
-        except httpx.RequestError as exc:  # <6>
+        except httpx.RequestError as exc:
             error_msg = f'{exc} {type(exc)}'.strip()
-        except KeyboardInterrupt:  # <7>
+        except KeyboardInterrupt:
             break
-        else:  # <8>
+        else:
             error_msg = ''
 
         if error_msg:
-            status = DownloadStatus.ERROR  # <9>
-        counter[status] += 1           # <10>
-        if verbose and error_msg:      # <11>
+            status = DownloadStatus.ERROR
+        counter[status] += 1
+        if verbose and error_msg:
             print(f'{cc} error: {error_msg}')
 
-    return counter  # <12>
+    return counter
 # end::FLAGS2_DOWNLOAD_MANY_SEQUENTIAL[]
 
 if __name__ == '__main__':

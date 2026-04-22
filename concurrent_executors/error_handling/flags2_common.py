@@ -41,9 +41,7 @@ def save_flag(img: bytes, filename: str) -> None:
     (DEST_DIR / filename).write_bytes(img)
 
 
-def initial_report(cc_list: list[str],
-                   actual_req: int,
-                   server_label: str) -> None:
+def initial_report(cc_list: list[str], actual_req: int, server_label: str) -> None:
     if len(cc_list) <= 10:
         cc_msg = ', '.join(cc_list)
     else:
@@ -57,9 +55,7 @@ def initial_report(cc_list: list[str],
         print(f'{actual_req} concurrent connections will be used.')
 
 
-def final_report(cc_list: list[str],
-                 counter: Counter[DownloadStatus],
-                 start_time: float) -> None:
+def final_report(cc_list: list[str], counter: Counter[DownloadStatus], start_time: float) -> None:
     elapsed = time.perf_counter() - start_time
     print('-' * 20)
     plural = 's' if counter[DownloadStatus.OK] != 1 else ''
@@ -72,10 +68,7 @@ def final_report(cc_list: list[str],
     print(f'Elapsed time: {elapsed:.2f}s')
 
 
-def expand_cc_args(every_cc: bool,
-                   all_cc: bool,
-                   cc_args: list[str],
-                   limit: int) -> list[str]:
+def expand_cc_args(every_cc: bool, all_cc: bool, cc_args: list[str], limit: int) -> list[str]:
     codes: set[str] = set()
     A_Z = string.ascii_uppercase
     if every_cc:
@@ -97,21 +90,11 @@ def expand_cc_args(every_cc: bool,
 
 def process_args(default_concur_req):
     server_options = ', '.join(sorted(SERVERS))
-    parser = argparse.ArgumentParser(
-        description='Download flags for country codes. '
-                    'Default: top 20 countries by population.')
-    parser.add_argument(
-        'cc', metavar='CC', nargs='*',
-        help='country code or 1st letter (eg. B for BA...BZ)')
-    parser.add_argument(
-        '-a', '--all', action='store_true',
-        help='get all available flags (AD to ZW)')
-    parser.add_argument(
-        '-e', '--every', action='store_true',
-        help='get flags for every possible code (AA...ZZ)')
-    parser.add_argument(
-        '-l', '--limit', metavar='N', type=int, help='limit to N first codes',
-        default=sys.maxsize)
+    parser = argparse.ArgumentParser(description='Download flags for country codes. ' 'Default: top 20 countries by population.')
+    parser.add_argument('cc', metavar='CC', nargs='*', help='country code or 1st letter (eg. B for BA...BZ)')
+    parser.add_argument('-a', '--all', action='store_true', help='get all available flags (AD to ZW)')
+    parser.add_argument('-e', '--every', action='store_true', help='get flags for every possible code (AA...ZZ)')
+    parser.add_argument('-l', '--limit', metavar='N', type=int, help='limit to N first codes', default=sys.maxsize)
     parser.add_argument(
         '-m', '--max_req', metavar='CONCURRENT', type=int,
         default=default_concur_req,

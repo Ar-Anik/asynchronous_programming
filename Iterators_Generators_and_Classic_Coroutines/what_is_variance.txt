@@ -1,0 +1,69 @@
+Q : What is Variance?
+-> Type Theory এই ধারণাটি মূলত একটি প্রতিস্থাপনযোগ্যতার নিয়ম বা Substitution Rule। যখন প্রোগ্রামিংয়ে বিভিন্ন data টাইপের মধ্যে একটি নির্দিষ্ট
+সম্পর্ক (Hierarchy) থাকে, তখন সেই সম্পর্কের ভিত্তিতে তৈরি হওয়া বড় বা জটিল টাইপগুলো (যেমন: List, Generator, Function) একে অপরের
+বদলে ব্যবহার করা যাবে কি না, সেটিই Variance নির্ধারণ করে।
+
+
+-> Subtype and Supertype
+মনে করা যাক:
+- Animal একটি Supertype (এটি একটি সাধারণ শ্রেণি)।
+- Dog একটি Subtype (এটি Animal-এর একটি বিশেষ বা সুনির্দিষ্ট শ্রেণি)।
+
+Logic অনুযায়ী: Every Dog is an Animal, but not every Animal is a Dog.
+প্রোগ্রামিংয়ের ভাষায়, যেখানে একটি Animal object প্রয়োজন, সেখানে নির্দ্বিধায় একটি Dog object ব্যবহার করা যায়। একেই বলা হয় Substitution।
+
+সাধারণ টাইপের ক্ষেত্রে প্রতিস্থাপন সহজ, কিন্তু যখন আমরা জটিল টাইপ (Complex Types) যেমন Generator[YieldType, SendType, ReturnType]
+নিয়ে কাজ করি, তখন বিষয়টি জটিল হয়ে যায়। Variance আমাদের উত্তর দেয়:
+- "যদি Dog একটি Animal হয়, তবে কি Generator[Dog]-কে Generator[Animal]-এর জায়গায় ব্যবহার করা যাবে?"
+
+
+Q : What is means by this `<:` Sign?
+- এই `<:` sign টি দিয়ে Subtype relation বোঝানো হয়।
+
+like A <: B, এই সমীকরণের অর্থ হলো A হলো B-এর একটি subtype। অর্থাৎ যেখানে একটি B টাইপের object প্রয়োজন, সেখানে কোনো সমস্যা ছাড়াই
+একটি A টাইপের object ব্যবহার করা সম্ভব।
+
+Example : Dog <: Animal। এর মানে হলো Dog Animal-এর একটি Subtype এবং যেখানে Animal চাওয়া হবে সেখানে Dog সরবরাহ করা যাবে।
+
+
+-> Variance-এর প্রকারভেদ
+1. Covariance - আউটপুট-ভিত্তিক প্রতিস্থাপনযোগ্যতা
+Covariance-এর Main Logic হলো "Output টাইপ সর্বদা Subtype হতে পারে"। যখন কোনো System বা Container থেকে Data শুধুমাত্র বাইরের
+দিকে প্রবাহিত হয় (Read-only বা Output), তখন সেখানে Covariance কাজ করে।
+
+Rule : যদি A <: B হয়, তবে f(A) <: f(B) হবে।
+
+ধরা যাক একটি system design করা হয়েছে যা Animal(SuperType) Output দেয়। এখন যদি এই সিস্টেমের বদলে এমন একটি System বসানো হয়
+যা Dog(SubType) Output দেয়, তবে সেটি কোডের কোনো Logic ভেঙে ফেলবে না। কারণ যে কোডটি একটি সাধারণ Animal প্রত্যাশা করছে, সে যখন
+একটি নির্দিষ্ট Dog পাবে, তখন তার সমস্ত Method (যেমন: eat() বা breathe()) সমানভাবে কাজ করবে।
+
+So Dog <: Animal, যেহেতু Dog টাইপটি Animal-এর সমস্ত বৈশিষ্ট্য ধারণ করে তাই Generator[Dog]-কে Generator[Animal]-এর একটি Valid
+Sub-Type হিসেবে গণ্য করা হয়। এখানে সম্পর্কের দিকটি (Hierarchy) মূল টাইপের মতোই বজায় থাকে।
+
+
+2. Contravariance - ইনপুট-ভিত্তিক নমনীয়তা
+Contravariance-এর ধারণাটি Covariance-এর ঠিক বিপরীত। এর Main Logic হলো "Input Type সর্বদা Super Type হতে পারে"। এটি মূলত
+ডেটা গ্রহণের ক্ষমতার (Consumption/Input) ওপর ভিত্তি করে কাজ করে।
+
+Rule : যদি A <: B হয়, তবে f(B) <: f(A) হবে।
+
+মনে করা যাক, একটি Handler বা Function প্রয়োজন যা শুধুমাত্র Dog Handle করতে পারে। এখন এর পরিবর্তে যদি এমন একটি Handler ব্যবহার
+করা হয় যা যেকোনো Animal Handle করতে সক্ষম, তবে সেটি আগেরটির চেয়ে বেশি নমনীয় এবং নিরাপদ। কারণ যে সব ধরণের Animal সামলাতে পারে,
+সে অবশ্যই Dog কেও সামলাতে পারবে। কিন্তু উল্টোটা চিন্তা করলে, যেখানে যেকোনো Animal (যেমন: বাঘ বা বিড়াল) Handle করার কথা, সেখানে যদি
+এমন কাউকে দেওয়া হয় যে শুধু Dog চেনে, তবে সিস্টেমটি অপরিচিত টাইপ পেয়ে ক্রাশ করবে। এই কারণে ইনপুটের ক্ষেত্রে সাধারণ বা বড় টাইপটি (Animal)
+বেশি নিরাপদ।
+
+এখানে সম্পর্কের দিকটি উল্টে যায়। যদিও Dog <: Animal, কিন্তু ইনপুট গ্রহণের ক্ষেত্রে Handler[Animal] হয়ে যায় Handler[Dog]-এর সাবটাইপ। like
+Generator[..., Animal, ...] <: Generator[..., Dog, ...]।
+
+
+3. Invariance - উভমুখী সুরক্ষা এবং হুবহু মিল
+Invariance-এর ক্ষেত্রে কোনো Subtype বা Supertype সম্পর্ক কাজ করে না। এখানে type দুটিকে একদম হুবহু বা Exact Match হতে হয়। এটি মূলত
+পরিবর্তনযোগ্য (Mutable) কন্টেইনারের ক্ষেত্রে প্রযোজ্য।
+
+পাইথনের List একটি Invariance Type। এর কারণ হলো লিস্টে একই সাথে Data Input এবং Output করা যায়। যদি List[Dog]-কে List[Animal]
+হিসেবে প্রতিস্থাপনের অনুমতি দেওয়া হতো, তবে বড় ধরণের Type Error তৈরি হতো।
+
+Suppose, কেউ যদি সেই List[Animal]-এ একটি Cat ঢুকিয়ে দেয় (যেহেতু Cat একটি Animal), তবে লিস্টের মূল Owner (যে শুধু Dog আশা করেছিল)
+যখন সেখান থেকে Data বের করবে, তখন সে Cat পেয়ে যাবে। এই ধরণের Data Corruption বা Logical Inconsistency(অসংগতি) এড়াতে Mutable
+কন্টেইনারে কোনো Variance অনুমোদিত নয়।

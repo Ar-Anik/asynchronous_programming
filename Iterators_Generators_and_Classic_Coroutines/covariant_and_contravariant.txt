@@ -1,0 +1,27 @@
+কোডের প্রতিটি লাইনের বিশ্লেষণ নিচে দেওয়া হলো:
+
+Python
+T_co = TypeVar('T_co', covariant=True)
+V_co = TypeVar('V_co', covariant=True)
+T_contra = TypeVar('T_contra', contravariant=True)
+এখানে TypeVar ব্যবহার করে তিনটি জেনেরিক ভ্যারিয়েবল তৈরি করা হয়েছে:
+
+T_co (Covariant): এটি হলো জেনারেটরের YieldType। যেহেতু জেনারেটর ডেটা yield করে বা আউটপুট দেয়, তাই এটি কোভ্যারিয়েন্ট।
+
+V_co (Covariant): এটি হলো জেনারেটরের ReturnType। কাজ শেষে জেনারেটর যে চূড়ান্ত রেজাল্ট return করে, সেটিও একটি আউটপুট, তাই এটিও কোভ্যারিয়েন্ট।
+
+T_contra (Contravariant): এটি হলো জেনারেটরের SendType। করুটিনের ভেতরে .send() মেথড ব্যবহার করে ডেটা পাঠানো (ইনপুট) হয়, তাই এটি কন্ট্রাভ্যারিয়েন্ট।
+
+Python
+class Generator(Iterator[T_co], Generic[T_co, T_contra, V_co], extra=_G_base):
+এই লাইনটি হলো পাইথনের Generator ক্লাসের মূল সিগনেচার বা ডিক্লারেশন।
+
+Iterator[T_co]: এটি নির্দেশ করে যে জেনারেটর মূলত এক ধরণের ইটারেটর, যা লুপের মাধ্যমে একে একে T_co (YieldType) ডেটা প্রদান করবে।
+
+Generic[T_co, T_contra, V_co]: এটি সবচেয়ে গুরুত্বপূর্ণ অংশ। এটি পাইথনকে বলে দেয় যে যখনই কেউ Generator টাইপটি ব্যবহার করবে, তখন তাকে অবশ্যই এই নির্দিষ্ট ক্রমে তিনটি টাইপ বলে দিতে হবে:
+
+প্রথমটি: T_co (কী Yield করবে) - Output
+
+দ্বিতীয়টি: T_contra (কী Send করা যাবে) - Input
+
+তৃতীয়টি: V_co (কী Return করবে) - Output
