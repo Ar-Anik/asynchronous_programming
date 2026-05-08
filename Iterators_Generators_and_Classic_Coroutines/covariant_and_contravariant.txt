@@ -1,27 +1,57 @@
-কোডের প্রতিটি লাইনের বিশ্লেষণ নিচে দেওয়া হলো:
+Python 3.6-এর typing.py মডিউলে typing.Generator কীভাবে declare করা হয়েছিল, তা নিচে দেওয়া হলো:
 
-Python
 T_co = TypeVar('T_co', covariant=True)
 V_co = TypeVar('V_co', covariant=True)
 T_contra = TypeVar('T_contra', contravariant=True)
-এখানে TypeVar ব্যবহার করে তিনটি জেনেরিক ভ্যারিয়েবল তৈরি করা হয়েছে:
 
-T_co (Covariant): এটি হলো জেনারেটরের YieldType। যেহেতু জেনারেটর ডেটা yield করে বা আউটপুট দেয়, তাই এটি কোভ্যারিয়েন্ট।
-
-V_co (Covariant): এটি হলো জেনারেটরের ReturnType। কাজ শেষে জেনারেটর যে চূড়ান্ত রেজাল্ট return করে, সেটিও একটি আউটপুট, তাই এটিও কোভ্যারিয়েন্ট।
-
-T_contra (Contravariant): এটি হলো জেনারেটরের SendType। করুটিনের ভেতরে .send() মেথড ব্যবহার করে ডেটা পাঠানো (ইনপুট) হয়, তাই এটি কন্ট্রাভ্যারিয়েন্ট।
-
-Python
+# many lines omitted
 class Generator(Iterator[T_co], Generic[T_co, T_contra, V_co], extra=_G_base):
-এই লাইনটি হলো পাইথনের Generator ক্লাসের মূল সিগনেচার বা ডিক্লারেশন।
 
-Iterator[T_co]: এটি নির্দেশ করে যে জেনারেটর মূলত এক ধরণের ইটারেটর, যা লুপের মাধ্যমে একে একে T_co (YieldType) ডেটা প্রদান করবে।
+এখানে TypeVar ব্যবহার করে তিনটি generic variable তৈরি করা হয়েছে:
+1. T_co(Covariant): এটি হলো জেনারেটরের YieldType। যেহেতু generator data yield করে বা output দেয়, তাই এটি Covariant।
 
-Generic[T_co, T_contra, V_co]: এটি সবচেয়ে গুরুত্বপূর্ণ অংশ। এটি পাইথনকে বলে দেয় যে যখনই কেউ Generator টাইপটি ব্যবহার করবে, তখন তাকে অবশ্যই এই নির্দিষ্ট ক্রমে তিনটি টাইপ বলে দিতে হবে:
+2. V_co(Covariant): এটি হলো জেনারেটরের ReturnType। কাজ শেষে জেনারেটর যে চূড়ান্ত result return করে, সেটিও একটি output, তাই এটিও
+Covariant।
 
-প্রথমটি: T_co (কী Yield করবে) - Output
+3. T_contra(Contravariant): এটি হলো জেনারেটরের SendType। করুটিনের ভেতরে .send() method ব্যবহার করে data পাঠানো(input) হয়, তাই
+এটি Contravariant।
 
-দ্বিতীয়টি: T_contra (কী Send করা যাবে) - Input
 
-তৃতীয়টি: V_co (কী Return করবে) - Output
+class Generator(Iterator[T_co], Generic[T_co, T_contra, V_co], extra=_G_base):
+
+এই লাইনটি হলো পাইথনের Generator ক্লাসের main signature বা declaration :
+1. Iterator[T_co]: এটি নির্দেশ করে যে generator মূলত এক ধরণের Iterator, যা লুপের মাধ্যমে একে একে T_co (YieldType) ডেটা প্রদান করবে।
+
+2. Generic[T_co, T_contra, V_co]: এটি সবচেয়ে গুরুত্বপূর্ণ অংশ। এটি পাইথনকে বলে দেয় যে যখনই কেউ Generator টাইপটি ব্যবহার করবে, তখন
+তাকে অবশ্যই এই নির্দিষ্ট ক্রমে তিনটি টাইপ বলে দিতে হবে:
+  - প্রথমটি: T_co (কী Yield করবে) - Output
+  - দ্বিতীয়টি: T_contra (কী Send করা যাবে) - Input
+  - তৃতীয়টি: V_co (কী Return করবে) - Output
+
+
+-> Covariant vs Contravariant
+Formal Parameter-এ Type Variable গুলো থেকে দেখা যায় যে, YieldType এবং ReturnType হলো covariant কিন্তু SendType হলো
+contravariant। এর কারণ বুঝতে হলে মনে রাখতে হবে যে, YieldType এবং ReturnType হলো মূলত output টাইপ। এই দুটি মূলত সেই ডেটাকে
+নির্দেশ করে যা করুটিন object থেকে বের হয়ে আসে অর্থাৎ যখন জেনারেটর object-টিকে একটি coroutine object হিসেবে ব্যবহার করা হয়, তখন
+এটি কী Output দেয়।
+
+YieldType এবং ReturnType covariant হওয়াটা সম্পূর্ণ যৌক্তিক। কারণ কোনো কোডে যদি এমন একটি coroutine প্রয়োজন হয় যা float value
+yield করে, তবে সেখানে নির্দ্বিধায় এমন একটি coroutine ব্যবহার করা যাবে যা integer ভ্যালু yield করে (যেহেতু integer হলো float-এর একটি
+subtype)। ঠিক এই কারণেই Generator তার YieldType প্যারামিটারের ক্ষেত্রে covariant। একই লজিক বা যুক্তি ReturnType parameter-এর ক্ষেত্রেও
+প্রযোজ্য—তাই এটিও covariant।
+
+যদি কোনো formal type parameter এমন কোনো ডেটার type define করে যা object থেকে বের হয়ে আসে(output), তবে সেটি covariant হতে
+পারে। covariance-কে একই দিকে নির্দেশ করা :> চিহ্ন দ্বারা প্রকাশ করা যায়:
+    float :> int
+    Generator[float, Any, float] :> Generator[int, Any, int]
+
+অন্যদিকে SendType হলো একটি input parameter, এটি হলো coroutine object-এর .send(value) মেথডের value argument-টির Type।
+যে Client code-এর একটি করুটিনে float value send করা প্রয়োজন, সেটি এমন কোনো coroutine ব্যবহার করতে পারবে না যার SendType হলো
+int; কারণ float কখনোই int-এর sub-type নয়। অন্যভাবে বললে, float কখনোই int-এর সাথে সামঞ্জস্যপূর্ণ (consistent-with) নয়।
+তবে Client code এমন একটি করুটিন ব্যবহার করতে পারবে যার SendType হলো complex; কারণ float হলো complex-এর একটি sub-type, তাই
+float এখানে complex-এর সাথে সম্পূর্ণ সামঞ্জস্যপূর্ণ।
+
+যদি কোনো formal type parameter এমন কোনো ডেটার টাইপ define করে যা object তৈরি হওয়ার পর তার(object-এর) ভেতরে প্রবেশ করে(ইনপুট),
+তবে সেটি contravariant হতে পারে।
+    float :> int
+    Generator[Any, float, Any] <: Generator[Any, int, Any]

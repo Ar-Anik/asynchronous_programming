@@ -57,3 +57,18 @@ print(list(s))
 """
 ['The', 'time', 'has', 'come', 'the', 'Walrus', 'said']
 """
+
+"""
+- একটি String থেকে একটি sentence object তৈরি করা হয়েছে।
+- reprlib.repr দ্বারা generate করা ... সম্বলিত __repr__ এর output-টি দেখানো হয়েছে।
+- Sentence instance iterable।
+- iterable হওয়ার কারণে, Sentence object গুলোকে list এবং অন্যান্য iterable টাইপ তৈরি করার জন্য ইনপুট হিসেবে ব্যবহার করা যায়।
+
+Index ব্যবহার করেও শব্দগুলো পাওয়া সম্ভব:
+>>> s[0]
+'The'
+>>> s[5]
+'Walrus'
+>>> s[-1]
+'said'
+"""

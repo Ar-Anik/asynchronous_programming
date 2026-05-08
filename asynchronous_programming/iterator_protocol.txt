@@ -1,0 +1,16 @@
+Iteration Protocol হলো Python-এর একটি Standard Interface যা নির্ধারণ করে কোনো Object-কে কিভাবে Iterate (পুনরাবৃত্তি) করা যাবে। Python
+এর for loop, list comprehension বা unpacking-এর মতো ফিচারগুলো মূলত এই Protocol-এর ওপর ভিত্তি করেই কাজ করে। সহজ কথায় এটি একটি
+guideline যা বলে দেয় কোনো Object থেকে কিভাবে একটি একটি করে Value collect করতে হবে।
+
+Python-এ Iteration Protocol প্রধানত দুটি মেকানিজমে বিভক্ত:
+
+1. The Iterable Protocol
+একটি Object-কে তখনই Iterable বলা হয় যখন সেটি একটি __iter__ Method implement করে। এটি এমন একটি Interface যা একটি Container
+হিসেবে কাজ করে। যখন এই Object-টির উপর iter()(like iter(object)/object.__iter__()) function চালানো হয়, তখন এটি একটি Iterator
+Object Return করে। Python-এর list, tuple, string এবং dictionary হলো Iterable-এর উদাহরণ।
+
+
+2. The Iterator Protocol
+একটি Object-কে তখনই Iterator বলা হয় যখন সেটি __next__ Method implement করে। Iterator Object-এ প্রতিবার __next__ Method Call
+করার সময় এটি পরবর্তী Value প্রদান করে। যদি প্রদানের মতো আর কোনো Data না থাকে, তবে এটি একটি StopIteration Exception Raise করে। এটি
+সবসময় তার বর্তমান অবস্থা বা State মেমরিতে ধরে রাখে, যাতে পরবর্তী Call-এ ঠিক তারপরের Value-টি দিতে পারে।
