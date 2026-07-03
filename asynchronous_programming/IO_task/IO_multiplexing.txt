@@ -1,0 +1,21 @@
+-> Event Loop যখন Operating System-এর কাছে Task delegate করে এবং কাজ শেষ হওয়ার পর Operating System ইভেন্ট লুপকে নোটিফিকেশন পাঠায়, এই পুরো মেকানিজম বা ধারণাকে টেকনিক্যাল ভাষায় বলা হয় I/O Multiplexing (অথবা Asynchronous / Non Blocking I/O Notification Scheme)।
+
+Python-এর asyncio মডিউলটি এই মেকানিজমকে ভিত্তি করে যে সফটওয়্যার ডিজাইন প্যাটার্ন ব্যবহার করে তৈরি হয়েছে, তার নাম Reactor Pattern।
+
+বিভিন্ন Operating System-এ এই I/O Multiplexing মেকানিজমটি ভিন্ন ভিন্ন নামে এবং ভিন্ন ইঞ্জিনে ইমপ্লিমেন্ট করা হয়েছে:
+- Linux System: এর নাম epoll (Event Poll)। এটি অত্যন্ত দক্ষ এবং হাজার হাজার কানেকশন একসাথে হ্যান্ডেল করতে পারে।
+
+- macOS / BSD System: এর নাম kqueue (Kernel Queue)। এটি ম্যাকওএসের কার্নেল লেভেলের অত্যন্ত শক্তিশালী একটি নোটিফিকেশন সিস্টেম।
+
+- Windows System: এর নাম IOCP (Input/Output Completion Ports)। উইন্ডোজ এই আর্কিটেকচারের মাধ্যমে Asynchronous কাজগুলো ম্যানেজ করে।
+
+
+-> Asynchronous I/O-এর ক্ষেত্রে Operating System কোনো Thread Pool বা Process Pool তৈরি করে না। যখন asyncio কোনো Asynchronous task (যেমন: নেটওয়ার্ক রিকোয়েস্ট বা সকেট অপারেশন) Operating System-এর কাছে হস্তান্তর করে, তখন OS ব্যাকগ্রাউন্ডে কোনো থ্রেড বা প্রসেসকে অলসভাবে বসিয়ে রাখে না। এটি সম্পূর্ণ থ্রেড-হীন (threadless) উপায়ে কাজ করে।
+- Operating System Asynchronous I/O কাজটি সম্পন্ন করার জন্য Hardware Interrupt এবং Kernel-level event queues ব্যবহার করে।
+Example : যখন একটি Asynchronous I/O নেটওয়ার্ক রিকোয়েস্ট পাঠানো হয়, তখন Operating System-এর Kernel নেটওয়ার্ক কার্ডকে (Network Interface Card - NIC) নির্দেশ দেয় ডেটা আদান-প্রদান করতে।
+এরপর Network Card যখন ইন্টারনেট থেকে ডেটা গ্রহণ করা শেষ করে, তখন সে সরাসরি CPU-কে একটি Hardware Interrupt সিগন্যাল পাঠায়।
+এই সিগন্যাল পাওয়ার পর CPU তাৎক্ষণিকভাবে OS Kernel-কে জানিয়ে দেয় যে ডেটা প্রস্তুত। এই পুরো প্রক্রিয়ার কোনো পর্যায়েই Operating System-কে কোনো আলাদা থ্রেড বা প্রসেস তৈরি করে ডেটার জন্য অপেক্ষা করতে হয় না।
+
+Exception Note : শুধুমাত্র ফাইল সিস্টেমের Task Execute (File I/O যেমন: ফাইল রিড বা রাইট) করার সময় কিছু Operating System ইন্টারনাল ব্লকিং এড়াতে ব্যাকগ্রাউন্ডে নিজস্ব Kernel Thread Pool ব্যবহার করতে পারে, কারণ সব ফাইল সিস্টেম সরাসরি Non Blocking মেকানিজম সাপোর্ট করে না।
+কিন্তু নেটওয়ার্ক বা সকেট I/O-এর ক্ষেত্রে কোনো থ্রেড পুলের প্রয়োজন হয় না।
+

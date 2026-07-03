@@ -83,8 +83,7 @@ def expand_cc_args(every_cc: bool, all_cc: bool, cc_args: list[str], limit: int)
             elif len(cc) == 2 and all(c in A_Z for c in cc):
                 codes.add(cc)
             else:
-                raise ValueError('*** Usage error: each CC argument '
-                                 'must be A to Z or AA to ZZ.')
+                raise ValueError('*** Usage error: each CC argument must be A to Z or AA to ZZ.')
     return sorted(codes)[:limit]
 
 

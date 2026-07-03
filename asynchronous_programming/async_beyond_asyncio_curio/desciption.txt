@@ -1,0 +1,81 @@
+asyncio-এর বাইরে: Curio (async Beyond asyncio: Curio)
+Python-এর async/await language construct-গুলো নির্দিষ্ট কোনো event loop বা library-এর ওপর নির্ভরশীল নয়। Special method-গুলোর মাধ্যমে প্রদান করা extensible API-এর কারণে, যথেষ্ট আগ্রহী যে কারো পক্ষেই native coroutine, asynchronous generator ইত্যাদি চালানোর জন্য নিজস্ব asynchronous runtime environment এবং framework লেখা সম্ভব।
+
+David Beazley তাঁর Curio project-এ ঠিক এই কাজটিই করেছেন। একেবারে শূন্য থেকে তৈরি একটি framework-এ এই নতুন language feature-গুলো কীভাবে ব্যবহার করা যায়, তা নিয়ে নতুন করে ভাবতে তিনি আগ্রহী ছিলেন। স্মরণ রাখা প্রয়োজন যে, asyncio Python 3.4-এ release হয়েছিল এবং এটি await-এর বদলে yield from ব্যবহার করত। তাই এর API asynchronous context manager, asynchronous iterator এবং async/await keyword-গুলোর মাধ্যমে সম্ভব হওয়া অন্যান্য সুবিধাগুলো কাজে লাগাতে পারেনি। এর ফলে, asyncio-এর তুলনায় Curio-এর API অনেক বেশি পরিচ্ছন্ন এবং এর implementation অনেক সহজ।
+
+উদাহরণ 21-21-এ blogdom.py script-টি (উদাহরণ 21-1) Curio ব্যবহার করে নতুনভাবে লিখে দেখানো হয়েছে।
+
+উদাহরণ 21-21. blogdom.py: উদাহরণ 21-1, এখন Curio ব্যবহার করে লেখা হয়েছে।
+
+Python
+#!/usr/bin/env python3
+from curio import run, TaskGroup
+import curio.socket as socket
+from keyword import kwlist
+
+MAX_KEYWORD_LEN = 4
+
+async def probe(domain: str) -> tuple[str, bool]:
+    try:
+        await socket.getaddrinfo(domain, None)
+    except socket.gaierror:
+        return (domain, False)
+
+    return (domain, True)
+
+
+async def main() -> None:
+    names = (kw for kw in kwlist if len(kw) <= MAX_KEYWORD_LEN)
+    domains = (f'{name}.dev'.lower() for name in names)
+
+    async with TaskGroup() as group:
+
+        for domain in domains:
+            await group.spawn(probe, domain)
+
+        async for task in group:
+            domain, found = task.result
+            mark = '+' if found else ' '
+            print(f'{mark} {domain}')
+
+
+if __name__ == '__main__':
+    run(main())
+probe-এর event loop পাওয়ার প্রয়োজন নেই, কারণ…
+
+…getaddrinfo হলো curio.socket-এর একটি top-level ফাংশন, এটি লুপ object-এর কোনো method নয়—যেমনটি asyncio-তে হয়ে থাকে।
+
+একাধিক coroutine পর্যবেক্ষণ ও নিয়ন্ত্রণ করার জন্য এবং সেগুলো সঠিকভাবে execute এবং ক্লিন আপ (clean up) হওয়ার বিষয়টি নিশ্চিত করার জন্য Curio-তে TaskGroup হলো একটি মূল কনসেপ্ট।
+
+একটি নির্দিষ্ট TaskGroup ইনস্ট্যান্স দ্বারা পরিচালিত কোনো coroutine শুরু করার উপায় হলো TaskGroup.spawn ব্যবহার করা। Coroutine-টি একটি Task দ্বারা wrap করা থাকে।
+
+একটি TaskGroup-এর ওপর async for ব্যবহার করে iterate করলে প্রতিটি Task সম্পন্ন হওয়ার সাথে সাথে Task ইনস্ট্যান্সগুলো পাওয়া যায়। এটি উদাহরণ 21-1-এর for … as_completed(…): লাইনটির সমতুল্য।
+
+Python-এ একটি asynchronous প্রোগ্রাম শুরু করার এই যুক্তিসঙ্গত উপায়টি Curio প্রথম introduce করেছিল।
+
+শেষের পয়েন্টটি একটু বিস্তারিতভাবে বলা যায়: Fluent Python-এর প্রথম version-এর asyncio কোডের উদাহরণগুলো লক্ষ্য করলে দেখা যাবে, নিচের লাইনগুলোর মতো কোড বারবার লেখা হয়েছে:
+
+Python
+loop = asyncio.get_event_loop()
+loop.run_until_complete(main())
+loop.close()
+Curio-এর TaskGroup হলো একটি asynchronous context manager, যা asyncio-এর বেশ কিছু ad hoc API এবং coding pattern-কে প্রতিস্থাপন করে। একটু আগেই দেখা গেল যে, কীভাবে একটি TaskGroup-এর ওপর iterate করার ফলে asyncio.as_completed(…) ফাংশনটির আর কোনো প্রয়োজন থাকে না। আরেকটি উদাহরণ: একটি special gather ফাংশনের পরিবর্তে, "Task Groups" docs থেকে নেওয়া এই snippet-টি গ্রুপের সমস্ত টাস্কের ফলাফল সংগ্রহ করে:
+
+
+async with TaskGroup(wait=all) as g:
+    await g.spawn(coro1)
+    await g.spawn(coro2)
+    await g.spawn(coro3)
+print('Results:', g.results)
+
+Task গ্রুপ structured concurrency সমর্থন করে: এটি concurrent programming-এর এমন একটি রূপ, যা একদল asynchronous টাস্কের সমস্ত কার্যকলাপকে একটি নির্দিষ্ট এন্ট্রি এবং এক্সিট পয়েন্টের মধ্যে সীমাবদ্ধ রাখে। এটি structured programming-এর অনুরূপ, যা GOTO command বর্জন করেছিল এবং লুপ ও সাবরুটিনের এন্ট্রি এবং এক্সিট পয়েন্ট সীমাবদ্ধ করার জন্য block স্টেটমেন্ট introduce করেছিল। যখন একটি asynchronous context manager হিসেবে TaskGroup ব্যবহার করা হয়, তখন এটি নিশ্চিত করে যে ভেতরে শুরু হওয়া সমস্ত Task enclosed block থেকে বের হওয়ার সময় সম্পন্ন অথবা বাতিল হবে এবং যেকোনো exception সঠিকভাবে raise হবে।
+
+আসন্ন Python release-গুলোতে সম্ভবত asyncio-তে structured concurrency গ্রহণ করা হবে। PEP 654–Exception Groups and except*-এ এর একটি শক্তিশালী ইঙ্গিত পাওয়া যায়, যা Python 3.11-এর জন্য অনুমোদিত হয়েছিল। এর "Motivation" সেকশনে Trio-এর "nurseries"-এর কথা উল্লেখ করা হয়েছে, যা মূলত Task গ্রুপের আরেকটি নাম: "Trio nurseries দ্বারা অনুপ্রাণিত হয়ে asyncio-তে একটি উন্নত Task spawning API implementation করাই ছিল এই PEP-এর প্রধান উদ্দেশ্য।"
+
+Curio-এর আরেকটি গুরুত্বপূর্ণ feature হলো একই কোডবেসে coroutine এবং thread দিয়ে programming করার জন্য better support প্রদান করা—যা বেশিরভাগ complex asynchronous প্রোগ্রামের জন্যই অপরিহার্য। await spawn_thread(func, …) ব্যবহার করে একটি thread চালু করলে এটি একটি Task-এর মতো ইন্টারফেসসহ একটি AsyncThread object রিটার্ন করে। একটি special AWAIT(coro) ফাংশনের কারণে thread-গুলো coroutine-কে কল করতে পারে—এটির নাম সব বড় হাতের অক্ষরে লেখা হয়েছে কারণ await এখন একটি keyword।
+
+Curio একটি UniversalQueue-ও সরবরাহ করে, যা thread, Curio coroutine এবং asyncio coroutine-গুলোর মধ্যে কাজের সমন্বয় করতে ব্যবহৃত হতে পারে। কথাটি একদম সঠিক, Curio-তে এমন কিছু feature রয়েছে যার সাহায্যে এটি একটি thread-এ এবং asyncio অন্য একটি thread-এ, একই প্রসেসের মধ্যে চলতে পারে, এবং UniversalQueue ও UniversalEvent-এর মাধ্যমে একে অপরের সাথে যোগাযোগ স্থাপন করতে পারে। এই "universal" ক্লাসগুলোর API coroutine-এর ভেতরে ও বাইরে একই রকম, কিন্তু coroutine-এর ভেতরে কল করার সময় শুরুতে await প্রিফিক্স (prefix) যোগ করতে হয়।
+
+2021 সালের অক্টোবরে যখন মূল লেখাটি লেখা হচ্ছে, তখন HTTPX হলো Curio-এর সাথে সামঞ্জস্যপূর্ণ প্রথম HTTP client library, তবে এমন কোনো asynchronous database library-এর কথা জানা নেই যা এখনও এটি সমর্থন করে। Curio repository-তে network programming-এর বেশ কিছু চমকপ্রদ উদাহরণ রয়েছে, যার মধ্যে একটি হলো WebSocket-এর ব্যবহার এবং অন্যটি হলো RFC 8305-এর implementation—যা IPv6 endpoint-এর সাথে যুক্ত হওয়ার জন্য Happy Eyeballs concurrent algorithm ব্যবহার করে এবং প্রয়োজনে দ্রুত IPv4-এ fast fall-back করতে সক্ষম।
+
+Curio-এর design বেশ প্রভাব বিস্তারকারী। Nathaniel J. Smith কর্তৃক শুরু করা Trio framework-টি ব্যাপকভাবে Curio দ্বারা অনুপ্রাণিত ছিল। Curio হয়তো Python contributor-দের asyncio API-এর ব্যবহারযোগ্যতা উন্নত করতেও উৎসাহিত করেছে। উদাহরণস্বরূপ, এর প্রাথমিক release-গুলোতে, asyncio ব্যবহারকারীদের প্রায়শই একটি লুপ object সংগ্রহ করতে এবং পাস করতে হতো, কারণ কিছু প্রয়োজনীয় ফাংশন হয় লুপ method ছিল অথবা সেগুলোর জন্য লুপ আর্গুমেন্টের প্রয়োজন হতো। Python-এর সাম্প্রতিক version-গুলোতে লুপে সরাসরি অ্যাক্সেসের খুব বেশি প্রয়োজন হয় না, এবং বাস্তবে এমন অনেক ফাংশন যেগুলো আগে একটি অপশনাল লুপ গ্রহণ করত, সেগুলো এখন এই আর্গুমেন্টটি বাতিল (deprecate) করে দিচ্ছে।

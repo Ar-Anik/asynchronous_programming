@@ -1,0 +1,98 @@
+# Relationship between Main Thread and Event Loop
+- Python প্রোগ্রাম চালু হওয়ার সাথে সাথেই স্বয়ংক্রিয়ভাবে একটি Main Thread তৈরি হয়ে যায়।
+
+- যখন asyncio.run(main()) call করা হয়, তখন এটি নতুন করে কোনো Main Thread তৈরি করে না। বরং এটি ঐ চলমান Main Thread-এর ভেতরেই একটি Event Loop চালু করে এবং পরিচালনা করে।
+
+- Event Loop হলো একটি infinite loop যা একটিমাত্র থ্রেডে (Main Thread) চলে। এর প্রধান কাজ হলো বিভিন্ন Task-এর মধ্যে context switch করা। যখন একটি Task কোনো data আসার জন্য বা কোনো response-এর জন্য wait করে, তখন Event Loop সেই Task-টিকে থামিয়ে অন্য একটি Task-কে execute করে। এই পুরো প্রক্রিয়াটি একটি নির্দিষ্ট থ্রেডের ভেতরেই ঘটে, যাকে Main Thread বলা হয়।
+
+
+# Blocking I/O vs Asynchronous I/O
+1. Blocking I/O Task
+- Execution Logic: এই প্রক্রিয়ায় কোনো I/O request পাঠানো হলে, সেই request সম্পূর্ণ শেষ না হওয়া পর্যন্ত সংশ্লিষ্ট থ্রেডটি পুরোপুরি block থাকে।
+
+- Thread State: তথ্য আদান-প্রদান বা wait-এর সময়ে থ্রেডটি অলসভাবে বসে থাকে এবং অন্য কোনো কাজ করতে পারে না।
+
+- Resource Usage: Parallel ভাবে অনেকগুলো কাজ করতে হলে প্রতিটির জন্য আলাদা আলাদা থ্রেড তৈরি করতে হয়, যা মেমোরি ও প্রসেসরের (CPU)
+ওপর ব্যাপক চাপ বাড়ায়।
+
+- Examples: time.sleep(), requests.get(), Synchronous database driver (যেমন: সাধারণ psycopg2)
+
+2. Asynchronous I/O Task
+- Execution Logic: এই প্রক্রিয়ায় I/O request পাঠানোর সাথে সাথেই control Main থ্রেডের কাছে ফিরে আসে। নির্দিষ্ট কাজটি background-এ চলতে থাকে।
+
+- Thread State: থ্রেডটি এক মুহূর্তের জন্যও block থাকে না, এটি সম্পূর্ণ free থাকে এবং অন্য Task handle করতে পারে।
+
+- Resource Usage: একটিমাত্র thread ব্যবহার করেই অত্যন্ত দক্ষতার সাথে একই সময়ে হাজার হাজার Task পরিচালনা করা সম্ভব।
+
+- Examples: asyncio.sleep(), aiohttp.get(), asyncpg database query
+
+
+# How does asynchronous I/O work?
+Asynchronous I/O কাজগুলো Main Thread নিজে execute করে না। এটি সম্পূর্ণভাবে Operating System-এর ওপর নির্ভর করে কাজ করে।
+
+[Event Loop] ---> (Delegate Request) ---> [Operating System (Kernel)]
+                                                    |
+                                         (Hardware Level Execution)
+                                                    |
+[Event Loop] <--- (Signal/Notification) <------------+
+
+- Delegation to OS: যখন কোডে await asyncpg.connect(...) বা কোনো Asynchronous I/O রিকোয়েস্ট পাঠানো হয়, তখন Event Loop নিজে ডেটাবেসের সাথে কানেক্ট করার চেষ্টা করে না। সে এই রিকোয়েস্টটি সরাসরি Operating System-এর কাছে হস্তান্তর (delegate) করে দেয়।
+
+- Operating System-এর দায়িত্ব: প্রকৃত I/O অপারেশনটি (অর্থাৎ ইন্টারনেটে রিকোয়েস্ট পাঠানো, অপেক্ষা করা এবং ডেটা সংগ্রহ করা) Operating System সম্পূর্ণ নিজে পরিচালনা করে। OS এই কাজগুলো করার জন্য নিজস্ব কিছু অত্যন্ত দ্রুতগতির C-লেভেল mechanism ব্যবহার করে। (যেমন: macOS-এর ক্ষেত্রে kqueue, Linux-এর ক্ষেত্রে epoll এবং Windows-এর ক্ষেত্রে IOCP)।
+
+- Main Thread সম্পূর্ণ Free: Operating System যখন background-এ I/O এর কাজ বা অপেক্ষা করার কাজটি করতে থাকে, তখন Python-এর Main Thread সম্পূর্ণ free থাকে। Event Loop সেই সময়টি কাজে লাগিয়ে Main Thread দিয়ে অন্যান্য Python কোড বা Task রান করতে থাকে।
+
+- সিগন্যাল এবং প্রত্যাবর্তন (Notification): Operating System-এর কাজ Hardware লেভেলে শেষ হলে (অর্থাৎ ডেটাবেস কানেকশন তৈরি হলে বা ডেটা চলে আসলে), OS একটি Signal দিয়ে Event Loop-কে জানিয়ে দেয় যে কাজ শেষ। এরপর Event Loop সেই ডেটা গ্রহণ করে Main Thread-এ থাকা Pause/Suspend হওয়া Task-টিকে পুনরায় Active করে।
+
+
+# How does Blocking I/O work? (Thread Pool Mechanism)
+Python-এর asyncio মডিউলটি concurrent.futures মডিউলের সাথে ঘনিষ্ঠভাবে যুক্ত। কিছু পুরোনো বা প্রচলিত ফাংশন রয়েছে যেগুলো Operating System-এর আধুনিক Non Blocking mechanism সমর্থন করে না (যেমন: ফাইল সিস্টেমে সাধারণ উপায়ে write করা বা সিঙ্ক্রোনাস লাইব্রেরি ব্যবহার করা)। এগুলোকে সরাসরি মূল Event Loop-এ চালালে পুরো program block হয়ে যায়।
+
+এটি এড়ানোর জন্য asyncio থ্রেড পুলের সাহায্য নেয়:
+
+অন-ডিমান্ড সৃষ্টি: Event Loop চালু হওয়ার সাথে সাথেই background-এ কোনো Thread Pool চালু থাকে না। যখন কোডের ভেতরে প্রথমবারের মতো কোনো ব্লকিং কাজ করার জন্য asyncio.to_thread() বা loop.run_in_executor() call করা হয়, ঠিক তখনই প্রয়োজন অনুযায়ী asyncio একটি Default Thread Pool (ThreadPoolExecutor) তৈরি করে নেয়। এই Thread Pool হলো আগে থেকে তৈরি করে রাখা কিছু থ্রেডের একটি collection।
+
+Task হস্তান্তর: যখন loop.run_in_executor(None, blocking_function) call করা হয়, তখন প্রথম argument হিসেবে None দেওয়ার অর্থ হলো— "asyncio-এর default Thread Pool ব্যবহার করো।"
+
+Thread বরাদ্দ ও নির্বাহ: Event Loop তখন blocking_function-টিকে default Thread Pool-এর কাছে পাঠিয়ে দেয়। Thread Pool তার সংগ্রহে থাকা idle থ্রেডগুলোর মধ্যে একটি থ্রেডকে এই কাজটি execute করার দায়িত্ব দেয়।
+
+Event Loop সচল রাখা: ঐ আলাদা থ্রেডটি যখন ফাংশনটি execute করতে ব্যস্ত থাকে, তখন মূল Event Loop কিন্তু বসে থাকে না। সে নিজের single thread-এ ফিরে গিয়ে অন্যান্য Asynchronous task-গুলো execute করতে থাকে।
+
+ফলাফল ফেরত: আলাদা থ্রেডে blocking_function-এর কাজ শেষ হলে, Thread Pool ইভেন্ট লুপকে একটি Signal দেয় এবং ফলাফলটি ফেরত পাঠায়। এরপর Event Loop সেই ফলাফলটি গ্রহণ করে এবং ঐ নির্দিষ্ট task-এর পরবর্তী কাজ শুরু করে। এর ফলে Main থ্রেডে থাকা Event Loopটি সুরক্ষিত ও Active থাকে।
+
+
+# run_in_executor() vs to_thread()
+যদিও উভয় ফাংশনই background-এ থাকা default Thread Pool-কে ব্যবহার করে ব্লকিং কাজ সম্পন্ন করে, তবে এদের মধ্যে কিছু কাঠামোগত পার্থক্য রয়েছে:
+
+-> loop.run_in_executor()
+- এটি একটি পুরোনো পদ্ধতি।
+- এখানে ডিফল্ট Thread Pool ব্যবহার করার জন্য প্রথম parameter হিসেবে None দিতে হয়।
+- এর একটি সীমাবদ্ধতা হলো, এটি সরাসরি keyword argument (যেমন: func(name="python", version=3)) গ্রহণ করতে পারে না।
+
+-> asyncio.to_thread()
+- এটি Python 3.9 ভার্সনে যুক্ত হওয়া একটি নতুন এবং সহজ ফাংশন।
+- এটি মূলত run_in_executor()-এরই একটি উন্নত রূপ (wrapper)। to_thread() call করলে তা ব্যাকগ্রাউন্ডে run_in_executor(None, ...) কেই call করে।
+- এর প্রধান সুবিধা হলো, এটি positional এবং keyword উভয় ধরনের argument খুব সহজেই গ্রহণ করতে পারে।
+
+
+# Real life Example
+
+1. asyncio.sleep(10)
+
+- Normal time.sleep(10) (Thread Block): যদি কোডে সাধারণ time.sleep(10) ব্যবহার করা হয়, তবে সেটি Operating System-কে নির্দেশ দেয় ঐ নির্দিষ্ট Thread-টিকে ১০ সেকেন্ডের জন্য পুরোপুরি ঘুম পাড়িয়ে দিতে। এই ১০ সেকেন্ড Thread-টি অন্য কোনো কাজ করতে পারে না। একে ব্লকিং (blocking) বলা হয়। এটি করলে পুরো Event Loop আটকে যাবে।
+
+- Asynchronous await asyncio.sleep(10) (Task Suspend): কিন্তু যখন await কিওয়ার্ড ব্যবহার করা হয়, তখন Main Thread বা Event Loop বিন্দুমাত্র থামে না বা ব্লক হয় না। await কিওয়ার্ডটি Event Loop-কে একটি বিশেষ বার্তা দেয়। এটি মূলত বলে:
+"আমার এই কাজটির এখন ১০ সেকেন্ড সময় লাগবে। তুমি এই ১০ সেকেন্ড আমার জন্য এখানে বেকার বসে থেকো না, আমাকে স্থগিত (suspend) করে তুমি অন্য কাজগুলো করো।"
+
+এই নির্দেশ পাওয়ার পর Event Loop Operating System-এ একটি টাইমার (timer) সেট করে রাখে এবং সাথে সাথেই Main Thread-কে ব্যবহার করে অন্য টাস্ক (Task) রান করা শুরু করে। ১০ সেকেন্ড পার হওয়ার পর Operating System যখন Event Loop-কে সিগন্যাল দেয়, তখন Event Loop আবার ঐ স্থগিত হওয়া কাজটিকে (sleep-এর পরের লাইন থেকে) পুনরায় চালু করে। অর্থাৎ, Main Thread এক সেকেন্ডের ভগ্নাংশের জন্যও ব্লক হয় না বা বসে থাকে না।
+
+2. asyncpg.connect(...)
+ডেটাবেসের সাথে কানেকশন তৈরি করার সময় ইন্টারনেটের মাধ্যমে ডেটা আদান-প্রদান করতে হয়, যা বেশ সময়সাপেক্ষ।
+
+- Synchronous connection: সাধারণ পদ্ধতিতে রিকোয়েস্ট পাঠানোর পর ডেটাবেস থেকে রেসপন্স না আসা পর্যন্ত Thread-টি অলসভাবে দাঁড়িয়ে থাকে এবং ব্লক হয়ে যায়।
+
+- Asynchronous connection(asyncpg): asyncpg এখানে "Non-blocking Socket" (নন-ব্লকিং সকেট) ব্যবহার করে। যখন await asyncpg.connect(...) কল করা হয়, তখন রিকোয়েস্টটি ডেটাবেসের উদ্দেশ্যে পাঠিয়ে দেওয়া হয়। এরপর await-এর কারণে ঐ টাস্কটি Event Loop-কে বলে:
+"ডেটাবেসের উত্তর আসতে কিছুটা সময় লাগবে, তুমি এই ফাঁকে অন্য কাজগুলো এগিয়ে রাখো।"
+
+Event Loop ঐ কানেকশনের টাস্কটিকে স্থগিত রেখে Main Thread দিয়ে অন্য কাজ করতে থাকে। ডেটাবেস থেকে যখন রেসপন্স আসে, তখন Operating System-এর ইভেন্ট নোটিফিকেশন মেকানিজম (যেমন: লিনাক্সের epoll বা ম্যাকওএসের kqueue) Event Loop-কে জানিয়ে দেয় যে ডেটাবেস থেকে উত্তর এসেছে। তখন Event Loop আবার ঐ কানেকশনের কাজটিতে ফিরে যায়। এখানেও Main Thread ডেটাবেসের রেসপন্সের জন্য এক মুহূর্তও অপেক্ষা করে না।
+
